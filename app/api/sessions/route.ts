@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { eq } from "drizzle-orm";
+import { eq, desc, asc } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { users, styles, sessions } from "@/lib/db/schema";
+import { users, styles, sessions, outputs } from "@/lib/db/schema";
 import { debitUser, InsufficientCreditsError } from "@/lib/credits/ledger";
 import { inngest } from "@/inngest/client";
 
@@ -117,4 +117,33 @@ export async function POST(req: NextRequest) {
     .where(eq(sessions.id, session.id));
 
   return NextResponse.json({ sessionId: session.id }, { status: 201 });
+}
+
+// ─── GET /api/sessions ────────────────────────────────────────────────────────
+// Returns: last 20 sessions for the authenticated user, each with outputs[0]
+
+export async function GET() {
+  const { userId: clerkId } = await auth();
+  if (!clerkId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const [user] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.clerkId, clerkId))
+    .limit(1);
+
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  const rows = await db.query.sessions.findMany({
+    where: eq(sessions.userId, user.id),
+    with: { outputs: { limit: 1, orderBy: asc(outputs.createdAt) } },
+    orderBy: desc(sessions.createdAt),
+    limit: 20,
+  });
+
+  return NextResponse.json(rows);
 }
