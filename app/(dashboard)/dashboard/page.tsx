@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -7,6 +8,7 @@ import { db } from "@/lib/db";
 import { users, sessions, outputs } from "@/lib/db/schema";
 import { CREDIT_PACKS } from "@/lib/stripe/packs";
 import { CreditPacks } from "./CreditPacks";
+import PurchaseBanner from "./PurchaseBanner";
 import type { SessionStatus } from "@/lib/db/schema";
 
 export default async function DashboardPage() {
@@ -36,6 +38,10 @@ export default async function DashboardPage() {
 
   return (
     <main className="max-w-4xl mx-auto px-4 py-10 space-y-10">
+      <Suspense fallback={null}>
+        <PurchaseBanner />
+      </Suspense>
+
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <Link
