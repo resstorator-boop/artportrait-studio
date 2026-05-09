@@ -34,5 +34,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# drizzle
-drizzle/migrations/*.sql
+# drizzle — migrations are committed; only ignore local overrides
+drizzle/migrations/*.local.sql
