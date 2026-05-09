@@ -86,8 +86,13 @@ export const generatePortrait = inngest.createFunction(
     });
 
     // ── Step 4: download result and upload to R2 ──────────────────────────────
+    // In mock mode the imageUrl is already a stable public URL, so skip R2.
     const r2Result = await step.run("upload-to-r2", async () => {
       const r2Key = `outputs/${sessionId}/result.png`;
+
+      if (process.env.AI_PROVIDER === "mock") {
+        return { r2Key, publicUrl: generated.imageUrl };
+      }
 
       const response = await fetch(generated.imageUrl);
       if (!response.ok) {
