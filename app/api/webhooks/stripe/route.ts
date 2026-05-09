@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { users, creditTransactions, webhookEvents } from "@/lib/db/schema";
+import { webhookEvents } from "@/lib/db/schema";
 import { stripe } from "@/lib/stripe";
+import { resolveCredits } from "@/lib/stripe/packs";
+import { creditUser } from "@/lib/credits/ledger";
 
 // ─── Route handler ────────────────────────────────────────────────────────────
 
@@ -14,7 +16,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Misconfigured" }, { status: 500 });
   }
 
-  // Raw body required for Stripe HMAC verification
+  // Raw body is required for Stripe HMAC verification — must use req.text()
   const body = await req.text();
   const sig = req.headers.get("stripe-signature");
 
@@ -29,7 +31,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Bad signature" }, { status: 400 });
   }
 
-  // Idempotency: Stripe may deliver the same event more than once
+  // Idempotency: Stripe guarantees at-least-once delivery
   const [seen] = await db
     .select({ id: webhookEvents.id })
     .from(webhookEvents)
@@ -48,7 +50,7 @@ export async function POST(req: NextRequest) {
         event.data.object as Stripe.Checkout.Session
       );
     }
-    // Additional event types go here in future milestones
+    // Future: payment_intent.payment_failed, customer.subscription.* etc.
 
     await db.insert(webhookEvents).values({
       id: event.id,
@@ -61,6 +63,7 @@ export async function POST(req: NextRequest) {
     const error = err instanceof Error ? err.message : String(err);
     console.error("stripe webhook error", { eventId: event.id, type: event.type, error });
 
+    // Record failure so the event is not silently lost; Stripe will retry
     await db.insert(webhookEvents).values({
       id: event.id,
       source: "stripe",
@@ -77,22 +80,24 @@ export async function POST(req: NextRequest) {
 
 // ─── checkout.session.completed ───────────────────────────────────────────────
 
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  // Guard: only process paid sessions (not free / pending invoice)
+async function handleCheckoutCompleted(
+  session: Stripe.Checkout.Session
+): Promise<void> {
+  // Guard: skip free / invoice-pending sessions
   if (session.payment_status !== "paid") return;
 
-  const userId = session.metadata?.userId;
-  const creditsRaw = session.metadata?.credits;
+  const { userId, pack, credits: creditsRaw } = session.metadata ?? {};
 
-  if (!userId || !creditsRaw) {
-    throw new Error(
-      `Missing required metadata — userId: ${userId}, credits: ${creditsRaw}`
-    );
+  if (!userId) {
+    throw new Error("checkout metadata missing: userId");
   }
 
-  const credits = parseInt(creditsRaw, 10);
-  if (isNaN(credits) || credits <= 0) {
-    throw new Error(`Invalid credits value in metadata: "${creditsRaw}"`);
+  // pack slug is authoritative; raw credits string is a fallback
+  const credits = resolveCredits(pack, creditsRaw);
+  if (!credits) {
+    throw new Error(
+      `Cannot resolve credits — pack: "${pack}", credits: "${creditsRaw}"`
+    );
   }
 
   const paymentIntentId =
@@ -100,24 +105,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       ? session.payment_intent
       : (session.payment_intent?.id ?? null);
 
-  const packLabel = session.metadata?.pack;
-
-  // Atomic: update balance + insert ledger entry
-  await db.transaction(async (tx) => {
-    await tx
-      .update(users)
-      .set({
-        creditsBalance: sql`${users.creditsBalance} + ${credits}`,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, userId));
-
-    await tx.insert(creditTransactions).values({
-      userId,
-      amount: credits,
-      type: "purchase",
-      description: packLabel ? `Pack: ${packLabel}` : "Credit purchase",
-      stripePaymentIntentId: paymentIntentId,
-    });
+  await creditUser({
+    userId,
+    amount: credits,
+    type: "purchase",
+    description: pack ? `Pack: ${pack}` : "Credit purchase",
+    stripePaymentIntentId: paymentIntentId,
   });
 }
