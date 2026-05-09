@@ -7,8 +7,10 @@ import { debitUser, InsufficientCreditsError } from "@/lib/credits/ledger";
 import { inngest } from "@/inngest/client";
 
 // ─── POST /api/sessions ───────────────────────────────────────────────────────
-// Body:    { styleId: string }
+// Body:    { styleId: string, inputImageKey: string }
 // Returns: { sessionId: string }  201
+//
+// inputImageKey must be the R2 key returned by POST /api/upload.
 //
 // Flow:
 //   auth → resolve user → validate style → insert session (pending) →
@@ -23,12 +25,23 @@ export async function POST(req: NextRequest) {
 
   // 2. Validate body
   let styleId: string;
+  let inputImageKey: string;
   try {
-    const body = (await req.json()) as { styleId?: unknown };
+    const body = (await req.json()) as { styleId?: unknown; inputImageKey?: unknown };
+
     if (typeof body.styleId !== "string" || !body.styleId) {
       return NextResponse.json({ error: "styleId is required" }, { status: 400 });
     }
+    if (typeof body.inputImageKey !== "string" || !body.inputImageKey) {
+      return NextResponse.json({ error: "inputImageKey is required" }, { status: 400 });
+    }
+    // Sanity-check: only keys produced by /api/upload are accepted
+    if (!body.inputImageKey.startsWith("uploads/")) {
+      return NextResponse.json({ error: "Invalid inputImageKey" }, { status: 400 });
+    }
+
     styleId = body.styleId;
+    inputImageKey = body.inputImageKey;
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
@@ -66,6 +79,7 @@ export async function POST(req: NextRequest) {
       styleId: style.id,
       status: "pending",
       creditsCharged: style.creditCost,
+      inputImageKey,
     })
     .returning({ id: sessions.id });
 
