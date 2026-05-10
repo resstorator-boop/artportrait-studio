@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -15,11 +15,29 @@ export default async function DashboardPage() {
   const { userId: clerkId } = await auth();
   if (!clerkId) redirect("/sign-in");
 
-  const [user] = await db
+  let [user] = await db
     .select({ id: users.id, creditsBalance: users.creditsBalance })
     .from(users)
     .where(eq(users.clerkId, clerkId))
     .limit(1);
+
+  // User exists in Clerk but not in the DB — webhook may not have fired in local dev.
+  // Provision on the fly so the dashboard works without the webhook running locally.
+  if (!user) {
+    const clerkUser = await currentUser();
+    if (!clerkUser) redirect("/sign-in");
+
+    const email = clerkUser.emailAddresses[0]?.emailAddress ?? "";
+    const name =
+      [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") ||
+      null;
+
+    [user] = await db
+      .insert(users)
+      .values({ clerkId, email, name, creditsBalance: 0 })
+      .onConflictDoUpdate({ target: users.clerkId, set: { updatedAt: new Date() } })
+      .returning({ id: users.id, creditsBalance: users.creditsBalance });
+  }
 
   if (!user) redirect("/sign-in");
 
