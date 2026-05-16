@@ -1,9 +1,0 @@
-{
-  "slug": "pencil-sketch",
-  "name": "Pencil Sketch",
-  "description": "Fine line work and careful shading, like a studio sketch.",
-  "creditCost": 5,
-  "sortOrder": 3,
-  "isActive": false,
-  "_archived": true
-}
