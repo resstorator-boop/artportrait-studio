@@ -1,0 +1,9 @@
+{
+  "slug": "oil-painting",
+  "name": "Oil Painting",
+  "description": "Rich textures and bold strokes in the style of classic oil masters.",
+  "creditCost": 10,
+  "sortOrder": 1,
+  "isActive": false,
+  "_archived": true
+}

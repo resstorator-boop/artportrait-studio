@@ -36,3 +36,6 @@ next-env.d.ts
 
 # drizzle — migrations are committed; only ignore local overrides
 drizzle/migrations/*.local.sql
+
+# clerk configuration (can include secrets)
+/.clerk/
