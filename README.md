@@ -1,78 +1,53 @@
-# ArtPortrait Studio
+# NUMERO
 
-AI-powered portrait art generation platform.
+AI-платформа арт-фотосессий. Пользователь загружает селфи и получает портреты в стиле культовых фотографов и режиссёров.
 
-## Stack
+## Стек
 
-- **Framework**: Next.js 14 App Router + TypeScript
-- **Auth**: Clerk
-- **Database**: PostgreSQL + Drizzle ORM
-- **Payments**: Stripe
-- **Background jobs**: Inngest
-- **Email**: Resend
-- **Storage**: Cloudflare R2 (S3-compatible)
+Next.js 16 · TypeScript · Drizzle + Neon · Clerk · Inngest · Cloudflare R2 · Robokassa · Unisender Go · Claude Vision · Flux/fal.ai
 
-## Getting Started
-
-### 1. Install dependencies
+## Быстрый старт
 
 ```bash
-npm install
-```
+# 1. Установить зависимости
+pnpm install
 
-### 2. Set up environment variables
-
-```bash
+# 2. Скопировать переменные окружения
 cp .env.example .env.local
-# Fill in all values in .env.local
+# Заполнить .env.local реальными значениями
+
+# 3. Применить схему БД (dev)
+pnpm db:push
+
+# 4. Запустить dev-сервер
+pnpm dev
+
+# 5. В отдельном терминале — Inngest dev-сервер
+pnpm inngest:dev
 ```
 
-### 3. Set up the database
+## Команды
 
 ```bash
-npm run db:push
+pnpm dev          # Next.js dev-сервер
+pnpm typecheck    # tsc --noEmit
+pnpm lint         # ESLint
+pnpm format       # Prettier
+pnpm test         # Vitest (unit)
+pnpm test:e2e     # Playwright (e2e)
+
+pnpm db:generate  # Drizzle: сгенерировать миграции
+pnpm db:push      # Drizzle: применить схему (dev only)
+pnpm db:migrate   # Drizzle: применить миграции (prod)
+pnpm db:studio    # Drizzle Studio (GUI)
+
+pnpm inngest:dev  # Inngest local dev server
 ```
 
-### 4. Run the dev server
+## Документация
 
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-### 5. Run Inngest Dev Server (for background jobs)
-
-```bash
-npx inngest-cli@latest dev
-```
-
-## Project Structure
-
-```
-artportrait-studio/
-├── app/                    # Next.js App Router
-│   ├── (auth)/             # Sign-in / Sign-up pages (Clerk)
-│   ├── (dashboard)/        # Protected user area
-│   ├── (marketing)/        # Public landing pages
-│   └── api/                # API routes (webhooks, inngest, upload)
-├── lib/                    # Server-side singletons
-│   ├── db/                 # Drizzle client
-│   ├── stripe/             # Stripe client
-│   ├── r2/                 # S3/R2 client
-│   └── resend/             # Resend email client
-├── inngest/                # Background job functions
-├── drizzle/                # Schema + migrations
-├── components/             # React components
-├── content/                # Static / MDX content
-└── public/                 # Static assets
-```
-
-## Database commands
-
-| Command | Description |
-|---|---|
-| `npm run db:generate` | Generate migration files |
-| `npm run db:migrate` | Run migrations |
-| `npm run db:push` | Push schema directly (dev only) |
-| `npm run db:studio` | Open Drizzle Studio UI |
+- [`docs/ARCHITECTURE_FINAL.md`](docs/ARCHITECTURE_FINAL.md) — финальная архитектура
+- [`docs/PRD_v2.md`](docs/PRD_v2.md) — продуктовые требования
+- [`docs/IDEA_v3.6.md`](docs/IDEA_v3.6.md) — идея и позиционирование
+- [`docs/PROJECT_MAP.md`](docs/PROJECT_MAP.md) — карта слоёв проекта
+- [`CLAUDE.md`](CLAUDE.md) — инструкции для Claude Code
