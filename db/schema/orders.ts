@@ -13,6 +13,9 @@ export const orders = pgTable(
     // Сумма в копейках
     amountKopecks: integer('amount_kopecks').notNull(),
     robokassaInvoiceId: text('robokassa_invoice_id').unique(),
+    // Partial unique index applied via raw SQL in 0001 migration
+    // (drizzle-kit does not generate WHERE clause). See db/migrations/0001_*.sql.
+    idempotencyKey: text('idempotency_key'),
     // 54-ФЗ Receipt payload для ОФД
     receiptPayload: jsonb('receipt_payload'),
     paidAt: timestamp('paid_at', { withTimezone: true }),

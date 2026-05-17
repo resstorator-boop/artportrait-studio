@@ -8,6 +8,13 @@
       "when": 1778999842565,
       "tag": "0000_condemned_fat_cobra",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779008796835,
+      "tag": "0001_jittery_bushwacker",
+      "breakpoints": true
     }
   ]
 }
