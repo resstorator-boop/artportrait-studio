@@ -30,10 +30,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const { url } = await createMagicLinkToken(user.clerkId);
+  const { token, url } = await createMagicLinkToken(user.clerkId);
 
   // TODO Этап 4: заменить на реальный вызов Unisender Go (lib/email/unisender.ts)
-  console.log(`[magic-link] Sending magic link to email=${email} url=${url}`);
+  console.log('[magic-link][stub] To:', email);
+  console.log('[magic-link][stub] URL:', url);
+  console.log('[magic-link][stub] Token:', token.slice(0, 16) + '...');
 
   await db.insert(events).values({
     userId: user.id,

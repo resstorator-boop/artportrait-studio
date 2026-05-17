@@ -5,7 +5,7 @@ import { inngest } from '@/inngest/client';
 // Идемпотентность по (user_id, step_name) обеспечивается Inngest step keys.
 export const unverifiedUserFollowup = inngest.createFunction(
   { id: 'unverified-user-followup', name: 'Unverified User Followup', triggers: [{ event: 'auth/magic_link.followup' }] },
-  async ({ event, step }: { event: { data: { userId: string } }; step: { sleep: (id: string, duration: string) => Promise<void> } }) => {
+  async ({ event: _event, step: _step }: { event: { data: { userId: string } }; step: { sleep: (id: string, duration: string) => Promise<void> } }) => {
     // TODO Этап 5:
     // const { userId } = event.data;
     //
