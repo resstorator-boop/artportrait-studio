@@ -44,7 +44,7 @@ export function createPaymentUrl(params: PaymentUrlParams): string {
     InvId: String(invoiceId),
     Description: description,
     SignatureValue: signature,
-    Receipt: encodeURIComponent(receiptJson),
+    Receipt: receiptJson, // URLSearchParams.toString() сам энкодит — не double-encode
     Email: email,
     Culture: 'ru',
     Encoding: 'utf-8',

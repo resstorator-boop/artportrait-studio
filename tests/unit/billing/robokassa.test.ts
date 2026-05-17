@@ -95,6 +95,21 @@ describe('createPaymentUrl', () => {
     });
     expect(url).toContain('IsTest=1');
   });
+
+  it('Receipt в URL декодируется обратно в исходный JSON (нет double-encoding)', async () => {
+    const { createPaymentUrl } = await import('@/lib/billing/robokassa');
+    const originalReceipt = { sno: 'usn_income' as const, items: [] };
+    const url = createPaymentUrl({
+      invoiceId: INVOICE_ID,
+      amountKopecks: AMOUNT_KOPECKS,
+      description: 'Test',
+      receipt: originalReceipt,
+      email: 'test@example.com',
+    });
+    const receiptParam = new URL(url).searchParams.get('Receipt');
+    expect(receiptParam).not.toBeNull();
+    expect(JSON.parse(receiptParam!)).toEqual(originalReceipt);
+  });
 });
 
 describe('verifyResultSignature', () => {
