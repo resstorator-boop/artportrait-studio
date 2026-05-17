@@ -1,10 +1,10 @@
 import { inngest } from '@/inngest/client';
 
-// Triggered by order.paid — создаёт Clerk sign-in token и отправляет magic link.
+// Triggered by process-payment via auth/create_magic_link.
 // Реальная реализация в Этапе 4 (Unisender Go + createMagicLinkToken).
 export const createMagicLink = inngest.createFunction(
-  { id: 'create-magic-link', name: 'Create Magic Link', triggers: [{ event: 'order/paid' }] },
-  async ({ event, step }: { event: { data: { userId?: string } }; step: { sendEvent: (id: string, payload: { name: string; data: unknown }) => Promise<void> } }) => {
+  { id: 'create-magic-link', name: 'Create Magic Link', triggers: [{ event: 'auth/create_magic_link' }] },
+  async ({ event, step }: { event: { data: { userId: string; orderId: string; email: string } }; step: { sendEvent: (id: string, payload: { name: string; data: unknown }) => Promise<void> } }) => {
     // TODO Этап 4:
     // 1. Найти user в DB по event.data.userId
     // 2. Если нет clerkId — создать Clerk user через clerkClient().users.createUser()
